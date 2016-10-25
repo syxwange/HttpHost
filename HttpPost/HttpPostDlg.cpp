@@ -49,6 +49,8 @@ END_MESSAGE_MAP()
 
 CHttpPostDlg::CHttpPostDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CHttpPostDlg::IDD, pParent)
+	, m_strName(_T(""))
+	, m_strPass(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -56,12 +58,15 @@ CHttpPostDlg::CHttpPostDlg(CWnd* pParent /*=NULL*/)
 void CHttpPostDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_NUM_EDT, m_strName);
+	DDX_Text(pDX, IDC_PASS_EDT, m_strPass);
 }
 
 BEGIN_MESSAGE_MAP(CHttpPostDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_LOG_BTN, &CHttpPostDlg::OnBnClickedLogBtn)
 END_MESSAGE_MAP()
 
 
@@ -97,6 +102,8 @@ BOOL CHttpPostDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
+
+	InitStatusBar();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -150,3 +157,41 @@ HCURSOR CHttpPostDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+VOID  CHttpPostDlg::SetStateInfo(LPCTSTR lpszText, UINT posIdx)
+{
+	if (!lpszText || _tcslen(lpszText) <= 0) return;
+	m_Statusbar.SetPaneText(posIdx, lpszText);
+}
+VOID CHttpPostDlg::InitStatusBar()
+{
+	CRect  rect;
+	GetWindowRect(rect);
+	MoveWindow(rect.left, rect.top, rect.Width(), rect.Height() + 15);
+
+	UINT array[1] = { 12301 };
+	m_Statusbar.Create(this);
+	m_Statusbar.SetIndicators(array, sizeof(array) / sizeof(UINT));
+
+	m_Statusbar.SetPaneInfo(0, array[0], 0, rect.Width());
+	RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0);
+
+	SetStateInfo(_T("状态：启动成功！"));
+
+}
+
+#include "PostThread.h"
+
+void CHttpPostDlg::OnBnClickedLogBtn()
+{
+	UpdateData(TRUE);
+	if (m_strName.IsEmpty() || m_strPass.IsEmpty())
+	{
+		MessageBox(_T("用户名和密码不能为空"));
+		return;
+	}
+	
+
+	CWinThread * pThread = AfxBeginThread(LoginPostFunc, this);
+
+	
+}

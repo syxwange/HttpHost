@@ -4,6 +4,7 @@
 
 #pragma once
 
+# include "resource.h"
 
 // CHttpPostDlg ¶Ô»°¿ò
 class CHttpPostDlg : public CDialogEx
@@ -29,4 +30,13 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedLogBtn();
+
+	VOID InitStatusBar();
+	VOID  SetStateInfo(LPCTSTR lpszText, UINT posIdx = 0);
+
+	CString m_strName;
+	CString m_strPass;
+	CStatusBar m_Statusbar;
 };
