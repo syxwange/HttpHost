@@ -43,7 +43,7 @@ string UTF8ToGBK(const string& strUTF8)
 	char *szGBK = new char[len + 1];
 	memset(szGBK, 0, len + 1);
 	WideCharToMultiByte(CP_ACP, 0, wszGBK, -1, szGBK, len, NULL, NULL);
-	//strUTF8 = szGBK;
+	//strUTF8 = szGBK;test////
 	string strTemp(szGBK);
 
 	delete[]szGBK;
