@@ -52,7 +52,6 @@ string UTF8ToGBK(const string& strUTF8)
 	return strTemp;
 }
 
-
 BOOL getLoginIFrameURL(CPostItem* pPItem)
 {
 	try{
@@ -95,7 +94,6 @@ BOOL getLoginIFrameURL(CPostItem* pPItem)
 
 	return TRUE;
 }
-
 
 BOOL visitLoginIFrameURL(CPostItem* pPItem)
 {
@@ -143,6 +141,7 @@ BOOL visitLoginIFrameURL(CPostItem* pPItem)
 }
 
 
+#import "C:/windows/system32/msscript.ocx" no_namespace
 BOOL visitVCodeURL(CPostItem* pPItem)
 {
 	try
@@ -161,6 +160,58 @@ http%%3A%%2F%%2Fqzs.qq.com%%2Fqzone%%2Fv5%%2Floginsucc.html%%3Fpara%%3Dizone&r=%
 
 		HRESULT hr = pPItem->m_pHttpReq->Open(_T("GET"), (LPCTSTR)strVCodeUrl);
 		if (FAILED(hr)) return FALSE;
+
+
+		IScriptControlPtr pScriptControl(__uuidof(ScriptControl));
+		pScriptControl->Language = "JavaScript";
+
+
+		LPCTSTR szPgv_pvid = _T("function jsfunc(){return (Math.round(Math.random() * 2147483647) * (new Date().getUTCMilliseconds())) % 10000000000;}");
+		LPCTSTR szPgv_info = _T("function jsfunc(){return (Math.round(Math.random() * 2147483647) * (new Date().getUTCMilliseconds())) % 10000000000;}");
+		LPCTSTR szPgv_pvi = _T("function jsfunc(){return Math.round(2147483647 * (Math.random() || .5)) * +new Date % 1E10;}");
+		LPCTSTR szPgv_si = _T("function jsfunc(){return Math.round(2147483647 * (Math.random() || .5)) * +new Date % 1E10;}");
+		
+		pScriptControl->AddCode(szPgv_pvid);
+		VARIANT A = pScriptControl->Eval("jsfunc();");
+		int iPgv_pvid = A.intVal;
+		pScriptControl->AddCode(szPgv_pvid);
+		 A = pScriptControl->Eval("jsfunc();");
+		int iPgv_info = A.intVal;
+		pScriptControl->AddCode(szPgv_pvid);
+		 A = pScriptControl->Eval("jsfunc();");
+		int iPgv_pvi = A.intVal;
+		pScriptControl->AddCode(szPgv_pvid);
+		 A = pScriptControl->Eval("jsfunc();");
+		int iPgv_si = A.intVal;
+
+		CString pgv_cookie;
+		pgv_cookie.Format(_T("pgv_pvid=%u; pgv_info=ssid=s%u; pgv_pvi=%u; pgv_si=s%u; _qz_referrer=i.qq.com"),
+			iPgv_pvid, iPgv_info, iPgv_pvi, iPgv_si);		
+
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Host"), _T("check.ptlogin2.qq.com"));
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Referer"), (LPCTSTR)pPItem->m_loginIFrameURL);
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Accept"), _T("application/javascript, */*;q=0.8"));
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Accept-Language"), _T("zh-CN"));
+		pPItem->m_pHttpReq->SetRequestHeader(_T("User-Agent"), _T("Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"));
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Connection"), _T("Keep-Alive"));
+		pPItem->m_pHttpReq->SetRequestHeader(_T("Cookie"), pgv_cookie.GetBuffer());
+
+		hr = pPItem->m_pHttpReq->Send();
+		if (FAILED(hr)) return FALSE;
+
+		long statusCode = pPItem->m_pHttpReq->GetStatus();
+		CString strContent;
+		_variant_t varRspBody = pPItem->m_pHttpReq->GetResponseBody();
+		char *pContentBuffer = (char *)varRspBody.parray->pvData;		
+		strContent = pContentBuffer;
+
+		_bstr_t allHeader = pPItem->m_pHttpReq->GetAllResponseHeaders();
+		CString strAllHeader = allHeader;
+
+		pPItem->m_strVcode = GetMidStrByLAndR(strContent, _T(",\'"), _T("\',"));
+		pPItem->m_uHex = GetMidStrByLAndR(strContent, _T("\\x"), _T("\'"), TRUE);
+		pPItem->m_ptvfSession = GetMidStrByLAndR(strAllHeader, _T("ptvfsession="), _T(";"));
+
 	}
 	catch (...)
 	{
@@ -168,7 +219,6 @@ http%%3A%%2F%%2Fqzs.qq.com%%2Fqzone%%2Fv5%%2Floginsucc.html%%3Fpara%%3Dizone&r=%
 	}
 	return 1;
 }
-
 
 UINT __cdecl LoginPostFunc(LPVOID pParam)
 {
@@ -196,6 +246,11 @@ UINT __cdecl LoginPostFunc(LPVOID pParam)
 		bRet = visitLoginIFrameURL(pPostItem);
 		if (!bRet) return FALSE;
 		
+
+
+		bRet = visitVCodeURL(pPostItem);
+		if (!bRet) return FALSE;
+
 	}
 	catch (...)
 	{
